@@ -19,4 +19,3 @@ COPY --from=builder /app/storage ./storage
 EXPOSE 8080
 
 CMD ["./main"]
-EOF
