@@ -1,0 +1,6 @@
+.env
+mcreative-be
+*.exe
+storage/
+tmp/
+.vscode/
