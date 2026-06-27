@@ -7,7 +7,7 @@ import (
 
 func CORS() fiber.Handler {
 	return cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173,http://localhost:3000",
+		AllowOrigins: "http://localhost:5173,http://localhost:3000,https://fem-creative.vercel.app,https://*.vercel.app",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
 	})
