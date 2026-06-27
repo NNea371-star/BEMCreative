@@ -43,6 +43,7 @@ func Setup(app *fiber.App) {
 	chatRepo        := repository.NewChatRepository(database.DB)
 	settingRepo     := repository.NewSettingRepository(database.DB)
 	orderRepo       := repository.NewOrderRepository(database.DB)
+	statsRepo       := repository.NewStatsRepository(database.DB) // Tambahkan ini
 
 	// Init services
 	authService        := service.NewAuthService(userRepo)
@@ -52,8 +53,9 @@ func Setup(app *fiber.App) {
 	articleService     := service.NewArticleService(articleRepo, uploadService)
 	testimonialService := service.NewTestimonialService(testimonialRepo)
 	chatService        := service.NewChatService(chatRepo)
-	settingService     := service.NewSettingService(settingRepo, productRepo) // Hapus orderRepo
-	orderService       := service.NewOrderService(orderRepo)                  // Tambahkan ini
+	settingService     := service.NewSettingService(settingRepo, productRepo)
+	orderService       := service.NewOrderService(orderRepo)
+	statsService       := service.NewStatsService(statsRepo) // Tambahkan ini
 
 	// Init handlers
 	authHandler        := handler.NewAuthHandler(authService)
@@ -64,7 +66,8 @@ func Setup(app *fiber.App) {
 	testimonialHandler := handler.NewTestimonialHandler(testimonialService)
 	chatHandler        := handler.NewChatHandler(chatService)
 	settingHandler     := handler.NewSettingHandler(settingService)
-	orderHandler       := handler.NewOrderHandler(orderService) // Tambahkan ini
+	orderHandler       := handler.NewOrderHandler(orderService)
+	statsHandler       := handler.NewStatsHandler(statsService) // Tambahkan ini
 
 	// WebSocket
 	app.Use("/ws", func(c *fiber.Ctx) error {
@@ -169,72 +172,93 @@ func Setup(app *fiber.App) {
 	// API
 	api := app.Group("/api")
 
+	// Public Routes
 	// Auth
 	api.Post("/auth/login", authHandler.Login)
 
-	// Public
+	// Stats - Tambahkan endpoint baru di sini
+	api.Get("/stats", statsHandler.GetSiteStats)
+
+	// Products
 	api.Get("/products",            productHandler.GetAll)
 	api.Get("/products/categories", productHandler.GetCategories)
 	api.Get("/products/:id",        productHandler.GetByID)
 
+	// Portfolio
 	api.Get("/portfolio",     portfolioHandler.GetAll)
 	api.Get("/portfolio/:id", portfolioHandler.GetByID)
 
+	// Articles
 	api.Get("/articles",            articleHandler.GetPublished)
 	api.Get("/articles/categories", articleHandler.GetCategories)
 	api.Get("/articles/:slug",      articleHandler.GetBySlug)
 
+	// Testimonials
 	api.Get("/testimonials",  testimonialHandler.GetVisible)
 	api.Post("/testimonials", testimonialHandler.SubmitPublic)
 
+	// Settings & Chat
 	api.Get("/settings",              settingHandler.GetPublicSettings)
-	api.Post("/orders/whatsapp",      orderHandler.OrderViaWhatsapp) 
-	api.Post("/chat/session",         chatHandler.CreateSession)
 	api.Get("/whatsapp",              settingHandler.GetPublicWhatsapp)
+	api.Post("/chat/session",         chatHandler.CreateSession)
 	api.Get("/chat/history/:session_id", chatHandler.GetSessionHistory)
 
-	// Admin
+	// Orders
+	api.Post("/orders/whatsapp", orderHandler.OrderViaWhatsapp)
+
+	// Admin Routes
 	admin := api.Group("/admin", middleware.Protected())
 
-	admin.Get("/account",         userHandler.GetProfile)
-	admin.Put("/account",         userHandler.UpdateAccount)
+	// User
+	admin.Get("/account",     userHandler.GetProfile)
+	admin.Put("/account",     userHandler.UpdateAccount)
+
+	// Dashboard
 	admin.Get("/dashboard/stats", chatHandler.GetDashboardStats)
 
-	admin.Get("/orders",          orderHandler.GetOrders)
-	admin.Get("/orders/:id",      orderHandler.GetOrderByID)
-	admin.Put("/orders/:id/status", orderHandler.UpdateOrderStatus)
-admin.Delete("/orders/:id",   orderHandler.DeleteOrder)
+	// Orders
+	admin.Get("/orders",               orderHandler.GetOrders)
+	admin.Get("/orders/:id",           orderHandler.GetOrderByID)
+	admin.Put("/orders/:id/status",    orderHandler.UpdateOrderStatus)
+	admin.Delete("/orders/:id",        orderHandler.DeleteOrder)
 
-	admin.Post("/products",                  productHandler.Create)
-	admin.Put("/products/:id",               productHandler.Update)
-	admin.Put("/products/:id/stock",         productHandler.UpdateStock)
-	admin.Delete("/products/:id",            productHandler.Delete)
-	admin.Post("/products/categories",       productHandler.CreateCategory)
+	// Products
+	admin.Post("/products",                productHandler.Create)
+	admin.Put("/products/:id",             productHandler.Update)
+	admin.Put("/products/:id/stock",       productHandler.UpdateStock)
+	admin.Delete("/products/:id",          productHandler.Delete)
+	admin.Post("/products/categories",     productHandler.CreateCategory)
 	admin.Delete("/products/categories/:id", productHandler.DeleteCategory)
 
+	// Portfolio
 	admin.Post("/portfolio",       portfolioHandler.Create)
 	admin.Put("/portfolio/:id",    portfolioHandler.Update)
 	admin.Delete("/portfolio/:id", portfolioHandler.Delete)
 
-	admin.Get("/articles",                   articleHandler.GetAll)
-	admin.Post("/articles",                  articleHandler.Create)
-	admin.Put("/articles/:id",               articleHandler.Update)
-	admin.Delete("/articles/:id",            articleHandler.Delete)
-	admin.Post("/articles/categories",       articleHandler.CreateCategory)
+	// Articles
+	admin.Get("/articles",                 articleHandler.GetAll)
+	admin.Post("/articles",                articleHandler.Create)
+	admin.Put("/articles/:id",             articleHandler.Update)
+	admin.Delete("/articles/:id",          articleHandler.Delete)
+	admin.Post("/articles/categories",     articleHandler.CreateCategory)
 	admin.Delete("/articles/categories/:id", articleHandler.DeleteCategory)
 
-	admin.Get("/testimonials",        testimonialHandler.GetAll)
-	admin.Post("/testimonials",       testimonialHandler.Create)
-	admin.Put("/testimonials/:id",    testimonialHandler.Update)
+	// Testimonials
+	admin.Get("/testimonials",       testimonialHandler.GetAll)
+	admin.Post("/testimonials",      testimonialHandler.Create)
+	admin.Put("/testimonials/:id",   testimonialHandler.Update)
 	admin.Delete("/testimonials/:id", testimonialHandler.Delete)
 
+	// Chat
 	admin.Get("/chat/sessions",     chatHandler.GetAllSessions)
 	admin.Get("/chat/sessions/:id", chatHandler.GetSessionMessages)
 
+	// Settings
 	admin.Put("/settings",        settingHandler.UpdateSettings)
 	admin.Get("/whatsapp-config", settingHandler.GetWhatsappConfig)
 	admin.Put("/whatsapp-config", settingHandler.UpdateWhatsappConfig)
 
+	// Upload
 	admin.Post("/upload/:folder", uploadHandler.Upload)
 	admin.Delete("/upload",       uploadHandler.Delete)
 }
