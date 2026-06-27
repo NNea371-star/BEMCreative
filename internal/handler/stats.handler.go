@@ -2,7 +2,6 @@ package handler
 
 import (
 	"BE/internal/service"
-	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,9 +24,8 @@ func (h *statsHandler) GetSiteStats(c *fiber.Ctx) error {
 	stats, err := h.statsService.GetSiteStats()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch site statistics",
+			"message": "Gagal mengambil statistik",
 		})
 	}
-
 	return c.JSON(stats)
 }
